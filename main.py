@@ -77,7 +77,7 @@ def del_tag():
         ZCODE.tag_delete(t)
 
 def add_colors(text): # sourcery no-metrics
-    var = []
+    var = {}
 
     del_tag()
 
@@ -95,14 +95,21 @@ def add_colors(text): # sourcery no-metrics
             elif mod == "//":
                 BGcode = "comment"
             else:
-                Evar = recup_element(mod, 1)
-                for e in Evar:
+                for e in recup_element(mod, 1):
                     de = sum(len(arg[i])+1 for i in range(e))
                     a = de + len(arg[e])
-                    print(de,a)
-                    ZCODE.tag_add(f"Evar{e}", f"{i+1}.{de}", f"{i+1}.{a}")
-                    if arg[e] not in var:
-                        var.append(arg[e])
+                    ZCODE.tag_add("Evar", f"{i+1}.{de}", f"{i+1}.{a}")
+                    if arg[e] not in var.keys():
+                        var[arg[e]] = 0
+                for e in recup_element(mod, 2):
+                    de = sum(len(arg[i])+1 for i in range(e))
+                    a = de + len(arg[e])
+                    if arg[e] in var:
+                        ZCODE.tag_add("Ivar", f"{i+1}.{de}", f"{i+1}.{a}")
+                        var[arg[e]] += 1
+                    else:
+                        ZCODE.tag_add("IvarNOSET", f"{i+1}.{de}", f"{i+1}.{a}")
+
 
                 BGcode = "no"
             if BGcode != "no":
@@ -110,7 +117,8 @@ def add_colors(text): # sourcery no-metrics
 
             ZCODE.tag_config(mod, foreground=MODS[mod][0])                                          # mod
             ZCODE.tag_config("Evar", foreground="cyan", font=("consolas", 12, "bold"))              # variable de sortie
-            #ZCODE.tag_config("Ivar", foreground="cyan")                                            # variable d'entrée
+            ZCODE.tag_config("Ivar", foreground="cyan")                                             # variable d'entrée
+            ZCODE.tag_config("IvarNOSET", foreground="orange")                                      # variable d'entrée non définie
             ZCODE.tag_config("er1", background="#554400")                                           # le nombre d'arguments est incorrect
             ZCODE.tag_config("comment", background="#004400", font=("consolas", 12, "italic"))      # commentaire
 
@@ -128,7 +136,7 @@ def actu():
         old_dim = new_dim
 
     var = add_colors(get_text())
-    var = [f"• {v}" + " " * (10 - len(v)) for v in var]
+    var = [f"• {v}" + " " * (7 - len(v)) + f"({var[v]})" for v in var.keys()]
     VARL.configure(text="\n".join(var))
 
     
