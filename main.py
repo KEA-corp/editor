@@ -1,3 +1,4 @@
+from gettext import find
 import re
 import tkinter as tk
 
@@ -48,6 +49,7 @@ def setup_editor():
     global ZCODE, VARL
     ZCODE = tk.Text(fenetre, bg="#0C0F1D", fg="#FFFFFF", insertbackground="#00ffff",font=("consolas", 12))
     VARL = tk.Label(fenetre, text="", bg="#12172B", fg="#FFFFFF", font=("consolas", 12))
+    VARL.configure(anchor="nw")
     place_editor()
 
 def kill_editor():
@@ -66,14 +68,19 @@ def place_editor():
 def get_text():
     return [l.replace("\t", "").replace("    ", "") for l in ZCODE.get("1.0", tk.END).split("\n")[:-1]]
 
-def recup_var(arg):
-    if arg[0] in MODS.keys():
-        for e in MODS[arg[0]][1]:
-            if e == 1:
-                return arg[MODS[arg[0]][1].index(e)+1]
+def recup_element(mod, id):
+    return[i+1 for i in range(len(MODS[mod][1])) if MODS[mod][1][i] == id]
 
-def add_colors(text):
+
+def del_tag():
+    for t in ["er1", "comment", "Ever", "Ivar", "no"]:
+        ZCODE.tag_delete(t)
+
+def add_colors(text): # sourcery no-metrics
     var = []
+
+    del_tag()
+
     for i in range(len(text)):
         arg = text[i].split(" ")
         mod = arg[0]
@@ -84,22 +91,29 @@ def add_colors(text):
             ZCODE.tag_add(mod, f"{i+1}.0", f"{i+1}.1")
             # si le nombre d'arguments est pas bon
             if len(MODS[mod][1]) > 0 and len(MODS[mod][1]) + 1 != len(arg):
-                BGcode = f"{i}er1"
-            # si c'est un commentaire on met le tag de commentaire
+                BGcode = "er1"
             elif mod == "//":
-                BGcode = f"{i}comment"
-            # si c'est une ligne classique
+                BGcode = "comment"
             else:
-                var.append(recup_var(arg))
+                Evar = recup_element(mod, 1)
+                for e in Evar:
+                    de = sum(len(arg[i])+1 for i in range(e))
+                    a = de + len(arg[e])
+                    print(de,a)
+                    ZCODE.tag_add(f"Evar{e}", f"{i+1}.{de}", f"{i+1}.{a}")
+                    if arg[e] not in var:
+                        var.append(arg[e])
+
                 BGcode = "no"
-                for _ in [f"{i}er1", f"{i}comment"]:
-                    ZCODE.tag_delete(_)
-            # on met les tags
             if BGcode != "no":
                 ZCODE.tag_add(BGcode, f"{i+1}.0", f"{i+1}.{len(text[i])}")
-            ZCODE.tag_config(mod, foreground=MODS[mod][0])           # mod
-            ZCODE.tag_config(f"{i}er1", background="#554400")        # le nombre d'arguments est incorrect
-            ZCODE.tag_config(f"{i}comment", background="#004400")    # commentaire
+
+            ZCODE.tag_config(mod, foreground=MODS[mod][0])                                          # mod
+            ZCODE.tag_config("Evar", foreground="cyan", font=("consolas", 12, "bold"))              # variable de sortie
+            #ZCODE.tag_config("Ivar", foreground="cyan")                                            # variable d'entrée
+            ZCODE.tag_config("er1", background="#554400")                                           # le nombre d'arguments est incorrect
+            ZCODE.tag_config("comment", background="#004400", font=("consolas", 12, "italic"))      # commentaire
+
     return var
 
 
@@ -114,6 +128,8 @@ def actu():
         old_dim = new_dim
 
     var = add_colors(get_text())
+    var = [f"• {v}" + " " * (10 - len(v)) for v in var]
+    VARL.configure(text="\n".join(var))
 
     
 
