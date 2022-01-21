@@ -1,5 +1,4 @@
-from gettext import find
-import re
+from re import T
 import tkinter as tk
 
 global old_dim, MODS
@@ -76,8 +75,15 @@ def del_tag():
     for t in ["er1", "comment", "Ever", "Ivar", "no"]:
         ZCODE.tag_delete(t)
 
+def is_int(s):
+    try:
+        int(s.replace(".", ""))
+        return True
+    except ValueError:
+        return False
+
 def add_colors(text): # sourcery no-metrics
-    var = {}
+    var, bcl = {}, {}
 
     del_tag()
 
@@ -101,6 +107,7 @@ def add_colors(text): # sourcery no-metrics
                     ZCODE.tag_add("Evar", f"{i+1}.{de}", f"{i+1}.{a}")
                     if arg[e] not in var.keys():
                         var[arg[e]] = 0
+
                 for e in recup_element(mod, 2):
                     de = sum(len(arg[i])+1 for i in range(e))
                     a = de + len(arg[e])
@@ -110,6 +117,19 @@ def add_colors(text): # sourcery no-metrics
                     else:
                         ZCODE.tag_add("IvarNOSET", f"{i+1}.{de}", f"{i+1}.{a}")
 
+                for e in recup_element(mod, 3):
+                    de = sum(len(arg[i])+1 for i in range(e))
+                    a = de + len(arg[e])
+                    ZCODE.tag_add("boucle", f"{i+1}.{de}", f"{i+1}.{a}")
+                    bcl[arg[e]] = arg[e] in bcl
+
+                for e in recup_element(mod, 7):
+                    de = sum(len(arg[i])+1 for i in range(e))
+                    a = de + len(arg[e])
+                    if is_int(arg[e]):
+                        ZCODE.tag_add("int", f"{i+1}.{de}", f"{i+1}.{a}")
+                    else:
+                        ZCODE.tag_add("texte", f"{i+1}.{de}", f"{i+1}.{a}")
 
                 BGcode = "no"
             if BGcode != "no":
@@ -121,8 +141,10 @@ def add_colors(text): # sourcery no-metrics
             ZCODE.tag_config("IvarNOSET", foreground="orange")                                      # variable d'entrée non définie
             ZCODE.tag_config("er1", background="#554400")                                           # le nombre d'arguments est incorrect
             ZCODE.tag_config("comment", background="#004400", font=("consolas", 12, "italic"))      # commentaire
+            ZCODE.tag_config("int", foreground="#B5CE89")                                           # nombre
+            ZCODE.tag_config("texte", font=("consolas", 12, "italic"))                              # texte
 
-    return var
+    return var, bcl
 
 
 
@@ -135,11 +157,10 @@ def actu():
         place_editor()
         old_dim = new_dim
 
-    var = add_colors(get_text())
+    var, bcl = add_colors(get_text())
     var = [f"• {v}" + " " * (7 - len(v)) + f"({var[v]})" for v in var.keys()]
-    VARL.configure(text="\n".join(var))
-
-    
+    bcl = [(f"✔ {b}" if bcl[b] else f"❌ {b}") + " " * (10 - len(b)) for b in bcl.keys()]
+    VARL.configure(text="VARIABLES:    \n"+"\n".join(var)+"\n\nBOUCLES:      \n"+"\n".join(bcl))
 
     fenetre.after(250, actu)
 
