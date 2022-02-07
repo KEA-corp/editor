@@ -1,4 +1,7 @@
+from pickle import GLOBAL
 import tkinter as tk
+from tkinter.filedialog import asksaveasfile
+from tkinter import filedialog
 
 global old_dim, MODS
 geometry = "1050x700"
@@ -39,14 +42,43 @@ fenetre.geometry(geometry)
 fenetre.title("kea-editor")
 fenetre.configure(background="#000000")
 
+def push():
+    global chemin
+    if chemin == 0:
+        return save_file()
+    with open(chemin, "w") as fichier:
+        fichier.write(ZCODE.get("1.0", tk.END))
+
+def save_file():
+    files = [('KEA', '*.kea'), ('All Files', '*.*')]
+    fichier = asksaveasfile(filetypes = files, defaultextension = files)
+    if fichier is not None:
+        fichier.write(ZCODE.get("1.0", tk.END))
+        fichier.close()
+
+def open_file():
+    global chemin
+    chemin = filedialog.askopenfilename()
+    fichier = open(chemin, "r")
+
+    if fichier is not None:
+        ZCODE.delete("1.0", tk.END)
+        ZCODE.insert(tk.END, fichier.read())
+        fichier.close()
+
 def get_dimensions():
     return fenetre.winfo_width(), fenetre.winfo_height()
 
 def setup_editor():
-    global ZCODE, VARL
+    global ZCODE, VARL, BT_LOAD, BT_SAVE, BT_PUSH, chemin
+    chemin = 0
     ZCODE = tk.Text(fenetre, bg="#0C0F1D", fg="#FFFFFF", insertbackground="#00ffff",font=("consolas", 12))
-    VARL = tk.Label(fenetre, text="", bg="#12172B", fg="#FFFFFF", font=("consolas", 12))
-    VARL.configure(anchor="nw")
+    VARL = tk.Label(fenetre, text="", bg="#12172B", fg="#FFFFFF", anchor="nw", font=("consolas", 12))
+
+    BT_SAVE = tk.Button(fenetre, bg="#12172B", fg="#FFFFFF", text="SAVE AS", command=save_file)
+    BT_PUSH = tk.Button(fenetre, bg="#12172B", fg="#FFFFFF", text="SAVE", command=push)
+    BT_LOAD = tk.Button(fenetre, bg="#12172B", fg="#FFFFFF", text="LOAD", command=open_file)
+
     place_editor()
 
 def kill_editor():
@@ -54,16 +86,24 @@ def kill_editor():
 
 def place_editor():
     x, y = get_dimensions()
+
+
     if x > 600:
         varlx = ((x - 600) // 10 + 100)
-        ZCODE.place(x=varlx, y=0, width=x-varlx, height=y)
+        ZCODE.place(x=varlx, y=30, width=x-varlx, height=y-30)
         VARL.place(x=0, y=0, width=varlx, height=y)
     else:
-        ZCODE.place(x=0, y=0, width=x, height=y)
+        varlx = 0
+        ZCODE.place(x=0, y=30, width=x, height=y-30)
         VARL.place(x=0, y=0, width=0, height=0)
 
+    BT_SAVE.place(x=varlx, y=0, width=100, height=30)
+    BT_PUSH.place(x=varlx+100, y=0, width=100, height=30)
+    BT_LOAD.place(x=varlx+200, y=0, width=100, height=30)
+
+
 def get_text():
-    return [l.replace("\t", "").replace("    ", "") for l in ZCODE.get("1.0", tk.END).split("\n")[:-1]]
+    return list(ZCODE.get("1.0", tk.END).split("\n")[:-1])
 
 def recup_element(mod, id):
     return[i+1 for i in range(len(MODS[mod][1])) if MODS[mod][1][i] == id]
@@ -81,18 +121,30 @@ def is_int(s):
         return False
 
 def add_colors(text): # sourcery no-metrics
+
+    def de_a(nb_espaces, arg, e):
+        de = nb_espaces + sum(len(arg[i])+1 for i in range(e))
+        a = de + len(arg[e])
+        return de, a
+
     var, bcl = {}, {}
 
     del_tag()
 
     for i in range(len(text)):
-        arg = text[i].split(" ")
+        nt = text[i]
+        while "    " in nt:
+            nt = nt.replace("    ", "")
+
+        nb_espaces = len(text[i]) - len(nt)
+        
+        arg = nt.split(" ")
         mod = arg[0]
 
         # si la ligne est reconnue
         if mod in MODS.keys():
             # on met le tag du mod
-            ZCODE.tag_add(mod, f"{i+1}.0", f"{i+1}.1")
+            ZCODE.tag_add(mod, f"{i+1}.{nb_espaces}", f"{i+1}.{nb_espaces + 1}")
             # si le nombre d'arguments est pas bon
             if len(MODS[mod][1]) > 0 and len(MODS[mod][1]) + 1 != len(arg):
                 BGcode = "er1"
@@ -100,15 +152,13 @@ def add_colors(text): # sourcery no-metrics
                 BGcode = "comment"
             else:
                 for e in recup_element(mod, 1):
-                    de = sum(len(arg[i])+1 for i in range(e))
-                    a = de + len(arg[e])
+                    de, a = de_a(nb_espaces, arg, e)                    
                     ZCODE.tag_add("Evar", f"{i+1}.{de}", f"{i+1}.{a}")
                     if arg[e] not in var.keys():
                         var[arg[e]] = 0
 
                 for e in recup_element(mod, 2):
-                    de = sum(len(arg[i])+1 for i in range(e))
-                    a = de + len(arg[e])
+                    de, a = de_a(nb_espaces, arg, e)
                     if arg[e] in var:
                         ZCODE.tag_add("Ivar", f"{i+1}.{de}", f"{i+1}.{a}")
                         var[arg[e]] += 1
@@ -116,14 +166,12 @@ def add_colors(text): # sourcery no-metrics
                         ZCODE.tag_add("IvarNOSET", f"{i+1}.{de}", f"{i+1}.{a}")
 
                 for e in recup_element(mod, 3):
-                    de = sum(len(arg[i])+1 for i in range(e))
-                    a = de + len(arg[e])
+                    de, a = de_a(nb_espaces, arg, e)
                     ZCODE.tag_add("boucle", f"{i+1}.{de}", f"{i+1}.{a}")
                     bcl[arg[e]] = arg[e] in bcl
 
                 for e in recup_element(mod, 7):
-                    de = sum(len(arg[i])+1 for i in range(e))
-                    a = de + len(arg[e])
+                    de, a = de_a(nb_espaces, arg, e)
                     if is_int(arg[e]):
                         ZCODE.tag_add("int", f"{i+1}.{de}", f"{i+1}.{a}")
                     else:
@@ -154,6 +202,16 @@ def actu():
         print("Dimensions changées", new_dim)
         place_editor()
         old_dim = new_dim
+
+    text = get_text()
+    for i in range(len(text)):
+        text[i] = text[i].replace("\t", "    ")
+    if text != get_text():
+        pos = ZCODE.index(tk.INSERT).split(".")
+        pos = pos[0] + "." + str(int(pos[1]) + 3)
+        ZCODE.delete("1.0", tk.END)
+        ZCODE.insert("1.0", "\n".join(text))
+        ZCODE.mark_set(tk.INSERT, pos)
 
     var, bcl = add_colors(get_text())
     var = [f"• {v}" + " " * (7 - len(v)) + f"({var[v]})" for v in var.keys()]
