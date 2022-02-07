@@ -13,7 +13,6 @@ MODS_DOC = {
     6: "mode de debug",
     7: "texte/valleur",
     8: "nom de fonction",
-
 }
 
 MODS = {
@@ -30,7 +29,7 @@ MODS = {
     "S": ("yellow", []),
     "T": ("purple", [8]),
     "V": ("red",    [1,7]),
-    "X": ("purple", [3,1]),
+    "X": ("purple", [3,2]),
     "Z": ("purple", []),
     "//": ("white", []),
 }
