@@ -1,4 +1,3 @@
-from pickle import GLOBAL
 import tkinter as tk
 from tkinter.filedialog import asksaveasfile
 from tkinter import filedialog
