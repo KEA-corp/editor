@@ -14,7 +14,6 @@ MODS_DOC = {
     5: "opérateur",
     6: "mode de debug",
     7: "texte/valleur",
-    8: "nom de fonction",
 }
 
 MODS = {
@@ -23,13 +22,13 @@ MODS = {
     "C": ("red",    [1,2,5,2]),
     "D": ("cyan",   [6]),
     "E": ("purple", [3]),
-    "F": ("blue",   [8]),
+    "F": ("blue",   [3]),
     "H": ("red",    [1,2]),
     "I": ("red",    [1]),
     "L": ("purple", [3,2]),
     "R": ("red",    [1,2]),
     "S": ("yellow", []),
-    "T": ("purple", [8]),
+    "T": ("purple", [3]),
     "V": ("red",    [1,7]),
     "X": ("purple", [3,2]),
     "Z": ("purple", []),
@@ -188,6 +187,7 @@ def add_colors(text): # sourcery no-metrics
             ZCODE.tag_config("comment", background="#004400", font=("consolas", 12, "italic"))      # commentaire
             ZCODE.tag_config("int", foreground="#B5CE89")                                           # nombre
             ZCODE.tag_config("texte", font=("consolas", 12, "italic"))                              # texte
+            ZCODE.tag_config("boucle", foreground="#FFFF99")                                        # boucle
 
     return var, bcl
 
