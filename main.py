@@ -1,3 +1,4 @@
+import re
 import tkinter as tk
 from tkinter.filedialog import asksaveasfile
 from tkinter import filedialog
@@ -14,25 +15,27 @@ MODS_DOC = {
     5: "opérateur",
     6: "mode de debug",
     7: "texte/valleur",
+    8: "argument de fonction",
+    9: "nom de fonction",
 }
 
 MODS = {
-    "A": ("yellow", [2]),
-    "B": ("red",    [1,2,4,2]),
-    "C": ("red",    [1,2,5,2]),
-    "D": ("cyan",   [6]),
-    "E": ("purple", [3]),
-    "F": ("blue",   [3]),
-    "H": ("red",    [1,2]),
-    "I": ("red",    [1]),
-    "L": ("purple", [3,2]),
-    "R": ("red",    [1,2]),
-    "S": ("yellow", []),
-    "T": ("purple", [3]),
-    "V": ("red",    [1,7]),
-    "X": ("purple", [3,2]),
-    "Z": ("purple", []),
-    "//": ("white", []),
+    "A": ("yellow", [2],            1),
+    "B": ("red",    [1, 2, 4, 2],   4),
+    "C": ("red",    [1, 2, 5, 2],   4),
+    "D": ("cyan",   [6],            1),
+    "E": ("purple", [3],            1),
+    "F": ("blue",   [3, 8],         1),
+    "H": ("red",    [1, 2],         2),
+    "I": ("red",    [1],            1),
+    "L": ("purple", [3, 2],         2),
+    "R": ("red",    [1, 2],         2),
+    "S": ("yellow", [7],            0),
+    "T": ("purple", [9, 8, 1],      1),
+    "V": ("red",    [1, 7],         2),
+    "X": ("purple", [3, 2],         2),     
+    "Z": ("purple", [],             0),
+    "//": ("white", [],             0),
 }
 
 fenetre = tk.Tk()
@@ -103,9 +106,8 @@ def place_editor():
 def get_text():
     return list(ZCODE.get("1.0", tk.END).split("\n")[:-1])
 
-def recup_element(mod, id):
-    return[i+1 for i in range(len(MODS[mod][1])) if MODS[mod][1][i] == id]
-
+def recup_element(mod, id, arg):
+    return [i+1 for i in range(len(MODS[mod][1])) if MODS[mod][1][i] == id]
 
 def del_tag():
     for t in ["er1", "comment", "Ever", "Ivar", "no"]:
@@ -121,9 +123,12 @@ def is_int(s):
 def add_colors(text): # sourcery no-metrics
 
     def de_a(nb_espaces, arg, e):
-        de = nb_espaces + sum(len(arg[i])+1 for i in range(e))
-        a = de + len(arg[e])
-        return de, a
+        try:
+            de = nb_espaces + sum(len(arg[i])+1 for i in range(e))
+            a = de + len(arg[e])
+            return de, a
+        except:
+            return 0, 0
 
     var, bcl = {}, {}
 
@@ -144,18 +149,18 @@ def add_colors(text): # sourcery no-metrics
             # on met le tag du mod
             ZCODE.tag_add(mod, f"{i+1}.{nb_espaces}", f"{i+1}.{nb_espaces + 1}")
             # si le nombre d'arguments est pas bon
-            if len(MODS[mod][1]) > 0 and len(MODS[mod][1]) + 1 != len(arg):
+            if not (MODS[mod][2] < len(arg) <= len(MODS[mod][1]) + 1):
                 BGcode = "er1"
             elif mod == "//":
                 BGcode = "comment"
             else:
-                for e in recup_element(mod, 1):
-                    de, a = de_a(nb_espaces, arg, e)                    
+                for e in recup_element(mod, 1, arg):
+                    de, a = de_a(nb_espaces, arg, e)
                     ZCODE.tag_add("Evar", f"{i+1}.{de}", f"{i+1}.{a}")
-                    if arg[e] not in var.keys():
+                    if len(arg) > e and arg[e] not in var.keys():
                         var[arg[e]] = 0
 
-                for e in recup_element(mod, 2):
+                for e in recup_element(mod, 2, arg):
                     de, a = de_a(nb_espaces, arg, e)
                     if arg[e] in var:
                         ZCODE.tag_add("Ivar", f"{i+1}.{de}", f"{i+1}.{a}")
@@ -163,17 +168,25 @@ def add_colors(text): # sourcery no-metrics
                     else:
                         ZCODE.tag_add("IvarNOSET", f"{i+1}.{de}", f"{i+1}.{a}")
 
-                for e in recup_element(mod, 3):
+                for e in recup_element(mod, 3, arg):
                     de, a = de_a(nb_espaces, arg, e)
                     ZCODE.tag_add("boucle", f"{i+1}.{de}", f"{i+1}.{a}")
                     bcl[arg[e]] = arg[e] in bcl
+                
+                for e in recup_element(mod, 9, arg):
+                    de, a = de_a(nb_espaces, arg, e)
+                    ZCODE.tag_add("boucle", f"{i+1}.{de}", f"{i+1}.{a}")
 
-                for e in recup_element(mod, 7):
+                for e in recup_element(mod, 7, arg):
                     de, a = de_a(nb_espaces, arg, e)
                     if is_int(arg[e]):
                         ZCODE.tag_add("int", f"{i+1}.{de}", f"{i+1}.{a}")
                     else:
                         ZCODE.tag_add("texte", f"{i+1}.{de}", f"{i+1}.{a}")
+
+                for e in recup_element(mod, 8, arg):
+                    de, a = de_a(nb_espaces, arg, e)
+                    ZCODE.tag_add("arg", f"{i+1}.{de}", f"{i+1}.{a}")
 
                 BGcode = "no"
             if BGcode != "no":
@@ -188,6 +201,7 @@ def add_colors(text): # sourcery no-metrics
             ZCODE.tag_config("int", foreground="#B5CE89")                                           # nombre
             ZCODE.tag_config("texte", font=("consolas", 12, "italic"))                              # texte
             ZCODE.tag_config("boucle", foreground="#FFFF99")                                        # boucle
+            ZCODE.tag_config("arg", foreground="#666666")                                           # argument
 
     return var, bcl
 
@@ -207,7 +221,7 @@ def actu():
         text[i] = text[i].replace("\t", "    ")
     if text != get_text():
         pos = ZCODE.index(tk.INSERT).split(".")
-        pos = pos[0] + "." + str(int(pos[1]) + 3)
+        pos = f'{pos[0]}.' + str(int(pos[1]) + 3)
         ZCODE.delete("1.0", tk.END)
         ZCODE.insert("1.0", "\n".join(text))
         ZCODE.mark_set(tk.INSERT, pos)
