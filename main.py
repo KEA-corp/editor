@@ -24,7 +24,7 @@ MODS = {
     "B": ("red",    [1, 2, 4, 2],   4),
     "C": ("red",    [1, 2, 5, 2],   4),
     "D": ("cyan",   [6],            1),
-    "E": ("purple", [3],            1),
+    "E": ("purple", [3, 2],         1),
     "F": ("blue",   [3, 8],         1),
     "H": ("red",    [1, 2],         2),
     "I": ("red",    [1],            1),
@@ -162,11 +162,12 @@ def add_colors(text): # sourcery no-metrics
 
                 for e in recup_element(mod, 2, arg):
                     de, a = de_a(nb_espaces, arg, e)
-                    if arg[e] in var:
-                        ZCODE.tag_add("Ivar", f"{i+1}.{de}", f"{i+1}.{a}")
-                        var[arg[e]] += 1
-                    else:
-                        ZCODE.tag_add("IvarNOSET", f"{i+1}.{de}", f"{i+1}.{a}")
+                    if len(arg) > e:
+                        if arg[e] in var:
+                            ZCODE.tag_add("Ivar", f"{i+1}.{de}", f"{i+1}.{a}")
+                            var[arg[e]] += 1
+                        else:
+                            ZCODE.tag_add("IvarNOSET", f"{i+1}.{de}", f"{i+1}.{a}")
 
                 for e in recup_element(mod, 3, arg):
                     de, a = de_a(nb_espaces, arg, e)
@@ -179,10 +180,11 @@ def add_colors(text): # sourcery no-metrics
 
                 for e in recup_element(mod, 7, arg):
                     de, a = de_a(nb_espaces, arg, e)
-                    if is_int(arg[e]):
-                        ZCODE.tag_add("int", f"{i+1}.{de}", f"{i+1}.{a}")
-                    else:
-                        ZCODE.tag_add("texte", f"{i+1}.{de}", f"{i+1}.{a}")
+                    if len(arg) > e:
+                        if is_int(arg[e]):
+                            ZCODE.tag_add("int", f"{i+1}.{de}", f"{i+1}.{a}")
+                        else:
+                            ZCODE.tag_add("texte", f"{i+1}.{de}", f"{i+1}.{a}")
 
                 for e in recup_element(mod, 8, arg):
                     de, a = de_a(nb_espaces, arg, e)
