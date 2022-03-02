@@ -1,4 +1,3 @@
-import re
 import tkinter as tk
 from tkinter.filedialog import asksaveasfile
 from tkinter import filedialog
@@ -223,7 +222,7 @@ def actu():
         text[i] = text[i].replace("\t", "    ")
     if text != get_text():
         pos = ZCODE.index(tk.INSERT).split(".")
-        pos = f'{pos[0]}.' + str(int(pos[1]) + 3)
+        pos = f'{pos[0]}.{str(int(pos[1]) + 3)}'
         ZCODE.delete("1.0", tk.END)
         ZCODE.insert("1.0", "\n".join(text))
         ZCODE.mark_set(tk.INSERT, pos)
